@@ -5,6 +5,16 @@ const jwt = require("jsonwebtoken");
 const updateUserHandler = async (req, res) => {
     const { email, username, password, userId } = req.body;
     console.log(email, username, password, userId);
+    // Check for duplicate email
+    const duplicate = await User.findOne({ email: email }).exec()
+    if (duplicate) return res.status(409).json({ "message": "Email already registered" })
+    // Check for username uniqueness if provided
+    if (username) {
+        const usernameDuplicate = await User.findOne({ username: username }).exec()
+        if (usernameDuplicate) {
+            return res.status(409).json({ "message": "Username already taken" })
+        }
+    }
     try {
         const user = await User.findById(userId);
         if (!user) {
@@ -33,9 +43,20 @@ const updateUserHandler = async (req, res) => {
 
 const deleteUserHandler = async (req, res) => {
     const token = req.cookies.jwt
-    if (!token) return res.status(401).json({ success: false, message: "User has been deleted successfully!" });
-
+    if (!token) return res.status(401).json({ success: false, message: "You need to login first!" });
+    // If there is a token, then get the payload data.
     const decode = jwt.decode(token)
+    console.log(decode)
+    try {
+        // Delete the user from database.
+        await User.findOneAndDelete({ email: token.email })
+        // Clear cookies and send response
+        res.clearCookie("jwt", { httpOnly: true })
+        res.status(200).json({ success: true, message: "User has been deleted successfully." });
+    } catch (error) {
+        console.error("Error updating user:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
 }
 
-module.exports = { updateUserHandler };
+module.exports = { updateUserHandler, deleteUserHandler };
