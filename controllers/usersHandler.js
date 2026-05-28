@@ -49,7 +49,7 @@ const deleteUserHandler = async (req, res) => {
     console.log(decode)
     try {
         // Delete the user from database.
-        await User.findOneAndDelete({ email: token.email })
+        await User.findOneAndDelete({ email: decode.email })
         // Clear cookies and send response
         res.clearCookie("jwt", { httpOnly: true })
         res.status(200).json({ success: true, message: "User has been deleted successfully." });
